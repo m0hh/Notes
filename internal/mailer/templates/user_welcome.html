@@ -1,0 +1,29 @@
+{{define "subject"}}Welcome to The Gym!{{end}}
+
+{{define "plainBody"}}
+Hi, {{ .name }}
+
+Thanks for signing up for a Gym account. We're excited to have you on board!
+Your Password is {{.userPassword}}
+
+The The Gym Team
+{{end}}
+
+{{define "htmlBody"}}
+<!doctype html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+
+<body>
+    <p>Hi, {{ .name }}</p>
+    <p>Thanks for signing up for a Gym account. We're excited to have you on board!</p>
+    <p>Your Password is {{.userPassword}}</p>
+    <p>The Gym Team</p>
+</body>
+
+</html>
+{{end}}
