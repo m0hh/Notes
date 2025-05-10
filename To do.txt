@@ -1,0 +1,2 @@
+Do the awkward get Id in folders.go cmd api
+same id stuff in note

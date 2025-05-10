@@ -1,2 +1,38 @@
 .env
 /remote
+config.json
+Makefile
+config*
+api*
+/uploads
+
+# React Native
+/mobile/node_modules/
+/mobile/android/app/build/
+/mobile/android/build/
+/mobile/ios/build/
+/mobile/*.ipa
+/mobile/*.apk
+/mobile/*.aab
+/mobile/.vscode/
+/mobile/.idea/
+/mobile/*.iml
+/mobile/*.DS_Store
+/mobile/*.log
+/mobile/npm-debug.log*
+/mobile/yarn-debug.log*
+/mobile/yarn-error.log*
+/mobile/.temp/
+/mobile/temp/
+/mobile/Thumbs.db
+/mobile/.env
+/mobile/.env.*.local
+# /mobile/config.js # Uncomment if you have a config.js with sensitive data in mobile
+/mobile/metro-cache/
+/mobile/.expo/
+/mobile/dist/
+/mobile/web-build/
+
+# If you choose to ignore lock files (generally not recommended for consistency)
+# /mobile/package-lock.json
+# /mobile/yarn.lock
