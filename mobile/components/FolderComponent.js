@@ -70,6 +70,11 @@ export default function FolderComponent({
     console.log("[FolderComponent] handleFolderPress: navigating to folderId:", folderId, "folderName:", folderName);
     navigateToFolder(folderId, folderName);
   };
+
+  const handleFolderNavigation = (folderId, folderName) => {
+    console.log(`[FolderComponent] User initiated navigation to folder: ${folderName} (ID: ${folderId})`);
+    navigateToFolder(folderId, folderName);
+  };
   
   const handleBackPress = () => {
     console.log("[FolderComponent] handleBackPress called. Current folderPath:", JSON.stringify(folderPath));
@@ -201,7 +206,7 @@ export default function FolderComponent({
               <View key={folder.id} style={styles.folderCard}>
                 <TouchableOpacity 
                   style={styles.folderCardContent} 
-                  onPress={() => handleFolderPress(folder.id, folder.name)}
+                  onPress={() => handleFolderNavigation(folder.id, folder.name)}
                 >
                   <Ionicons name="folder" size={30} color="#6366f1" />
                   <Text style={styles.folderName} numberOfLines={1}>
@@ -239,11 +244,34 @@ export default function FolderComponent({
         <Text style={styles.sectionTitle}>
           Recordings {getCurrentFolderRecordings().length > 0 ? `(${getCurrentFolderRecordings().length})` : ''}
         </Text>
-        {getCurrentFolderRecordings().length === 0 && (
+        {getCurrentFolderRecordings().length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={48} color="#d1d5db" />
             <Text style={styles.emptyStateText}>No recordings in this folder</Text>
           </View>
+        ) : (
+          <ScrollView>
+            {getCurrentFolderRecordings().map(recording => (
+              <TouchableOpacity
+                key={recording.id}
+                style={styles.recordingItem}
+                onPress={() => onSelectRecording(recording)}
+                onLongPress={() => handleRecordingOptions(recording)}
+              >
+                <Ionicons name="musical-notes-outline" size={24} color="#6366f1" />
+                <View style={styles.recordingInfo}>
+                  <Text style={styles.recordingName}>{recording.name || `Recording ${recording.id}`}</Text>
+                  {/* You might want to add date or duration here */}
+                </View>
+                <TouchableOpacity 
+                  style={styles.recordingOptionsButton}
+                  onPress={() => handleRecordingOptions(recording)}
+                >
+                  <Ionicons name="ellipsis-vertical" size={18} color="#9ca3af" />
+                </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         )}
       </View>
       
@@ -477,13 +505,32 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 20,
   },
   emptyStateText: {
+    marginTop: 8,
     fontSize: 16,
-    color: '#9ca3af',
-    marginTop: 16,
-    textAlign: 'center',
+    color: '#6b7280',
+  },
+  recordingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+  recordingInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  recordingName: {
+    fontSize: 16,
+    color: '#374151',
+  },
+  recordingOptionsButton: {
+    padding: 8,
   },
   modalOverlay: {
     flex: 1,

@@ -62,6 +62,12 @@ export const RecordingsProvider = ({ children }) => {
     setLoading(true)
     setError(null)
     console.log("[RecordingsContext] loadRecordingsFromBackend called with folderId:", folderId);
+
+    if (folderId === null) {
+      console.log("[RecordingsContext] User is listing recordings in root.");
+    } else {
+      console.log(`[RecordingsContext] User is listing recordings in folder ID: ${folderId}.`);
+    }
     
     try {
       const data = await getNotes(1, 100, folderId) // Using larger page size

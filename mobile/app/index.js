@@ -72,7 +72,7 @@ function AppNavigator() {
             options={{ headerShown: false }}
           />
           <Stack.Screen
-            name="SingleNoteScreen" // Add SingleNoteScreen here
+            name="SingleNote" // Changed from SingleNoteScreen to SingleNote
             component={SingleNoteScreen}
             options={{ headerShown: false }} // Optional: Hide header if managed inside the screen
           />

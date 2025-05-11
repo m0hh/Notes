@@ -169,23 +169,27 @@ export default function SingleNoteScreen({ route, navigation }) {
             <Text style={styles.playText}>{isPlaying ? "Pause Audio" : "Play Audio"}</Text>
           </View>
 
-          {note.transcript ? (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Transcript</Text>
-              <View style={styles.contentBox}>
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Transcript</Text>
+            <View style={styles.contentBox}>
+              {note.transcript ? (
                 <Text style={styles.contentText}>{note.transcript}</Text>
-              </View>
+              ) : (
+                <Text style={styles.contentText}>Transcript not available.</Text>
+              )}
             </View>
-          ) : null}
+          </View>
 
-          {note.summary ? (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>AI Summary</Text>
-              <View style={styles.contentBox}>
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>AI Summary</Text>
+            <View style={styles.contentBox}>
+              {note.summary ? (
                 <Text style={styles.contentText}>{note.summary}</Text>
-              </View>
+              ) : (
+                <Text style={styles.contentText}>Summary not available.</Text>
+              )}
             </View>
-          ) : null}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
