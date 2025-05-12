@@ -7,10 +7,14 @@ import {
   Alert,
   ScrollView,
   TextInput,
-  Modal
+  Modal,
+  Button,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RecordingsContext } from '../context/RecordingsContext';
+import FolderSelectorModal from './FolderSelectorModal';
+import * as api from '../app/api';
 
 export default function FolderComponent({ 
   navigation,
@@ -29,17 +33,21 @@ export default function FolderComponent({
     refreshRecordings,
     navigateToFolder
   } = useContext(RecordingsContext);
-  
+
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [showMoveFolderSelectorModal, setShowMoveFolderSelectorModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [selectedRecording, setSelectedRecording] = useState(null);
   const [targetFolderId, setTargetFolderId] = useState(null);
   const [showSubfolderMenu, setShowSubfolderMenu] = useState({});
   
+  const [queryText, setQueryText] = useState('');
+  const [isLoadingQuery, setIsLoadingQuery] = useState(false);
+  const [queryAnswer, setQueryAnswer] = useState(null);
+  const [queryError, setQueryError] = useState(null);
+
   console.log("[FolderComponent] Initializing. currentFolderId:", currentFolderId, "folderPath:", JSON.stringify(folderPath));
   
-  // Helper function to get current folder's recordings
   const getCurrentFolderRecordings = () => {
     const recordingsInFolder = recordings.filter(
       (r) => r.folder_id === currentFolderId || (currentFolderId === null && r.folder_id == null)
@@ -48,7 +56,6 @@ export default function FolderComponent({
     return recordingsInFolder;
   };
   
-  // Helper function to get current folder's subfolders
   const getCurrentSubfolders = () => {
     const subfolders = folders.filter(
       (f) => f.parent_id === currentFolderId || (currentFolderId === null && f.parent_id == null)
@@ -60,7 +67,7 @@ export default function FolderComponent({
   const handleCreateFolder = async () => {
     if (newFolderName.trim()) {
       console.log("[FolderComponent] handleCreateFolder: creating folder named:", newFolderName, "in currentFolderId:", currentFolderId);
-      await addFolder(newFolderName, currentFolderId); // Pass currentFolderId as parentId
+      await addFolder(newFolderName, currentFolderId);
       setNewFolderName('');
       setShowCreateModal(false);
     }
@@ -127,22 +134,32 @@ export default function FolderComponent({
         { 
           text: 'Move to Another Folder', 
           onPress: () => {
-            setTargetFolderId(null);
-            setShowMoveModal(true);
+            setShowMoveFolderSelectorModal(true);
+            console.log("[FolderComponent] Showing FolderSelectorModal for move operation.");
           } 
         },
       ]
     );
   };
   
-  const handleMoveRecording = async () => {
-    if (selectedRecording && targetFolderId !== undefined) {
-      console.log("[FolderComponent] handleMoveRecording: moving recordingId:", selectedRecording.id, "to targetFolderId:", targetFolderId);
-      await moveRecording(selectedRecording.id, targetFolderId);
-      setShowMoveModal(false);
+  const handleMoveRecording = async (destinationFolderId) => {
+    if (selectedRecording) {
+      console.log("[FolderComponent] handleMoveRecording: moving recordingId:", selectedRecording.id, "to targetFolderId:", destinationFolderId);
+      await moveRecording(selectedRecording.id, destinationFolderId);
+      setShowMoveFolderSelectorModal(false);
       setSelectedRecording(null);
-      setTargetFolderId(null);
       refreshRecordings();
+    }
+  };
+
+  const handleSelectFolderForMove = (folderId) => {
+    console.log(`[FolderComponent] handleSelectFolderForMove: Folder selected with ID: ${folderId}.`);
+    setShowMoveFolderSelectorModal(false);
+    if (selectedRecording) {
+      handleMoveRecording(folderId);
+    } else {
+      console.warn("[FolderComponent] handleSelectFolderForMove: selectedRecording is null. Cannot move.");
+      Alert.alert("Error", "No recording selected to move.");
     }
   };
   
@@ -162,6 +179,25 @@ export default function FolderComponent({
     const name = currentFolder ? currentFolder.name : (folderPath.length > 0 ? folderPath[folderPath.length -1].name : "Folder");
     console.log("[FolderComponent] getCurrentFolderName: currentFolderId:", currentFolderId, "resolved name:", name);
     return name;
+  };
+
+  const handleAskQuery = async () => {
+    if (!queryText.trim() || !currentFolderId) {
+      setQueryError("Missing information to ask a question.");
+      return;
+    }
+    setIsLoadingQuery(true);
+    setQueryAnswer(null);
+    setQueryError(null);
+    try {
+      const result = await api.queryFolder(currentFolderId, queryText);
+      setQueryAnswer(result.answer || "No answer found.");
+    } catch (error) {
+      console.error("Error querying folder:", error);
+      setQueryError(error.message || "Failed to get an answer.");
+    } finally {
+      setIsLoadingQuery(false);
+    }
   };
 
   useEffect(() => {
@@ -261,7 +297,6 @@ export default function FolderComponent({
                 <Ionicons name="musical-notes-outline" size={24} color="#6366f1" />
                 <View style={styles.recordingInfo}>
                   <Text style={styles.recordingName}>{recording.name || `Recording ${recording.id}`}</Text>
-                  {/* You might want to add date or duration here */}
                 </View>
                 <TouchableOpacity 
                   style={styles.recordingOptionsButton}
@@ -274,6 +309,32 @@ export default function FolderComponent({
           </ScrollView>
         )}
       </View>
+      
+      {currentFolderId !== null && (
+        <View style={styles.qaSection}>
+          <Text style={styles.sectionTitle}>Ask a question about this folder</Text>
+          <TextInput
+            style={styles.textInputQa}
+            placeholder="Type your question here..."
+            value={queryText}
+            onChangeText={setQueryText}
+          />
+          <Button title="Ask" onPress={handleAskQuery} disabled={isLoadingQuery} />
+          {isLoadingQuery && <ActivityIndicator size="large" color="#6366f1" style={styles.loadingIndicator} />}
+          {queryAnswer && !isLoadingQuery && (
+            <View style={styles.answerContainer}>
+              <Text style={styles.answerTitle}>Answer:</Text>
+              <Text style={styles.answerText}>{queryAnswer}</Text>
+            </View>
+          )}
+          {queryError && !isLoadingQuery && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorTitle}>Error:</Text>
+              <Text style={styles.errorText}>{queryError}</Text>
+            </View>
+          )}
+        </View>
+      )}
       
       <Modal
         visible={showCreateModal}
@@ -322,85 +383,16 @@ export default function FolderComponent({
         </View>
       </Modal>
       
-      <Modal
-        visible={showMoveModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowMoveModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Move Recording</Text>
-              <Text style={styles.modalSubtitle}>
-                Select a destination folder
-              </Text>
-              
-              <ScrollView style={styles.folderSelectionList}>
-                <TouchableOpacity 
-                  style={[
-                    styles.folderSelectionItem, 
-                    targetFolderId === null && styles.selectedFolderItem
-                  ]}
-                  onPress={() => setTargetFolderId(null)}
-                >
-                  <Ionicons 
-                    name={targetFolderId === null ? "radio-button-on" : "radio-button-off"}
-                    size={22} 
-                    color={targetFolderId === null ? "#6366f1" : "#9ca3af"} 
-                  />
-                  <View style={styles.folderSelectionInfo}>
-                    <Text style={styles.folderSelectionName}>Root</Text>
-                    <Text style={styles.folderSelectionPath}>/ (root directory)</Text>
-                  </View>
-                </TouchableOpacity>
-                
-                {folders.map(folder => (
-                  <TouchableOpacity 
-                    key={folder.id}
-                    style={[
-                      styles.folderSelectionItem, 
-                      targetFolderId === folder.id && styles.selectedFolderItem
-                    ]}
-                    onPress={() => setTargetFolderId(folder.id)}
-                  >
-                    <Ionicons 
-                      name={targetFolderId === folder.id ? "radio-button-on" : "radio-button-off"}
-                      size={22} 
-                      color={targetFolderId === folder.id ? "#6366f1" : "#9ca3af"} 
-                    />
-                    <View style={styles.folderSelectionInfo}>
-                      <Text style={styles.folderSelectionName}>{folder.name}</Text>
-                      <Text style={styles.folderSelectionPath}>
-                        {folder.parent_id ? 'Subfolder' : 'Top-level folder'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              
-              <View style={styles.modalButtons}>
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.cancelButton]} 
-                  onPress={() => {
-                    setShowMoveModal(false);
-                    setSelectedRecording(null);
-                  }}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.createModalButton]} 
-                  onPress={handleMoveRecording}
-                >
-                  <Text style={styles.createModalButtonText}>Move</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <FolderSelectorModal
+        visible={showMoveFolderSelectorModal}
+        onClose={() => {
+          console.log("[FolderComponent] FolderSelectorModal (for move) onClose triggered.");
+          setShowMoveFolderSelectorModal(false);
+          setSelectedRecording(null);
+        }}
+        onSelectFolder={handleSelectFolderForMove}
+        title="Move Recording To..."
+      />
     </View>
   );
 }
@@ -626,5 +618,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
   },
-
+  qaSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    marginTop: 8,
+  },
+  textInputQa: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 12,
+    backgroundColor: 'white',
+  },
+  loadingIndicator: {
+    marginTop: 10,
+  },
+  answerContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#eef2ff',
+    borderRadius: 8,
+  },
+  answerTitle: {
+    fontWeight: 'bold',
+    color: '#4338ca',
+    marginBottom: 4,
+  },
+  answerText: {
+    fontSize: 15,
+    color: '#3730a3',
+  },
+  errorContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+  },
+  errorTitle: {
+    fontWeight: 'bold',
+    color: '#b91c1c',
+    marginBottom: 4,
+  },
+  errorText: {
+    fontSize: 15,
+    color: '#991b1b',
+  },
 });
