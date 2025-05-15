@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginUser, registerUser, logoutUser, activateAccount } from '../app/api';
+import { loginUser, registerUser, logoutUser, activateAccount, socialAuthLogin } from '../app/api';
+import { useGoogleAuth, useAppleAuth } from '../app/socialAuth';
 
 export const AuthContext = createContext();
 
@@ -8,6 +9,21 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Initialize social authentication hooks
+  const { 
+    signInWithGoogle, 
+    googleUserData, 
+    googleLoading,
+    googleRequest
+  } = useGoogleAuth();
+  
+  const {
+    signInWithApple,
+    appleUserData,
+    appleLoading,
+    isAppleAuthAvailable
+  } = useAppleAuth();
 
   useEffect(() => {
     // Check if user is logged in on app start
@@ -102,17 +118,77 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+  
+  // Google Sign-in function
+  const loginWithGoogle = async () => {
+    if (!googleRequest) {
+      setError("Google authentication is not ready yet");
+      return false;
+    }
+    
+    try {
+      await signInWithGoogle();
+      return true;
+    } catch (error) {
+      setError("Google sign-in was cancelled or failed");
+      return false;
+    }
+  };
+  
+  // Apple Sign-in function
+  const loginWithApple = async () => {
+    if (!isAppleAuthAvailable) {
+      setError("Apple authentication is not available on your device");
+      return false;
+    }
+    
+    try {
+      await signInWithApple();
+      return true;
+    } catch (error) {
+      setError("Apple sign-in was cancelled or failed");
+      return false;
+    }
+  };
+  
+  // Process social auth data when received
+  useEffect(() => {
+    const processSocialLogin = async (socialData) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const userData = await socialAuthLogin(socialData);
+        setUser(userData);
+        return true;
+      } catch (error) {
+        setError(error.message || "Social login failed");
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (googleUserData) {
+      processSocialLogin(googleUserData);
+    } else if (appleUserData) {
+      processSocialLogin(appleUserData);
+    }
+  }, [googleUserData, appleUserData]);
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        loading,
+        loading: loading || googleLoading || appleLoading,
         error,
         login,
         register,
         logout,
         activate,
+        loginWithGoogle,
+        loginWithApple,
+        isGoogleAuthAvailable: !!googleRequest,
+        isAppleAuthAvailable,
         isLoggedIn: !!user,
       }}
     >

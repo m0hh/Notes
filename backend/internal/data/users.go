@@ -226,3 +226,34 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 
 	return &user, nil
 }
+
+func (m UserModel) Retrieve(id int64) (*User, error) {
+	stmt := `SELECT id, name, email, version, role, activated, created_at, password_hash
+	FROM users WHERE id = $1`
+
+	var user User
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, stmt, id).Scan(
+		&user.Id,
+		&user.Name,
+		&user.Email,
+		&user.Version,
+		&user.Role,
+		&user.Activated,
+		&user.CreatedAt,
+		&user.Password.hash,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRcordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+}

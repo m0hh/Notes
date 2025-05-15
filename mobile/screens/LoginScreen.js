@@ -9,12 +9,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, AntDesign } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }) {
-  const { login, register, loading, error } = useContext(AuthContext);
+  const { 
+    login, 
+    register, 
+    loading, 
+    error, 
+    loginWithGoogle, 
+    loginWithApple, 
+    isGoogleAuthAvailable, 
+    isAppleAuthAvailable 
+  } = useContext(AuthContext);
+  
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -65,6 +76,22 @@ export default function LoginScreen({ navigation }) {
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setFormErrors({});
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      Alert.alert('Error', 'Google sign in failed. Please try again.');
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      await loginWithApple();
+    } catch (error) {
+      Alert.alert('Error', 'Apple sign in failed. Please try again.');
+    }
   };
 
   return (
@@ -161,6 +188,40 @@ export default function LoginScreen({ navigation }) {
             )}
           </TouchableOpacity>
           
+          {isLogin && (
+            <>
+              <View style={styles.orContainer}>
+                <View style={styles.orLine} />
+                <Text style={styles.orText}>OR</Text>
+                <View style={styles.orLine} />
+              </View>
+              
+              <View style={styles.socialButtonsContainer}>
+                {isGoogleAuthAvailable && (
+                  <TouchableOpacity
+                    style={styles.socialButton}
+                    onPress={handleGoogleSignIn}
+                    disabled={loading}
+                  >
+                    <AntDesign name="google" size={24} color="#DB4437" />
+                    <Text style={styles.socialButtonText}>Sign in with Google</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {isAppleAuthAvailable && (
+                  <TouchableOpacity
+                    style={styles.socialButton}
+                    onPress={handleAppleSignIn}
+                    disabled={loading}
+                  >
+                    <AntDesign name="apple1" size={24} color="black" />
+                    <Text style={styles.socialButtonText}>Sign in with Apple</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </>
+          )}
+          
           <TouchableOpacity style={styles.toggleContainer} onPress={toggleMode}>
             <Text style={styles.toggleText}>
               {isLogin
@@ -248,8 +309,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toggleText: {
-    color: '#6366f1',
     fontSize: 14,
+    color: '#6366f1',
+    fontWeight: '500',
   },
   errorContainer: {
     backgroundColor: '#fee2e2',
@@ -259,5 +321,40 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#b91c1c',
+  },
+  orContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#d1d5db',
+  },
+  orText: {
+    marginHorizontal: 10,
+    color: '#6b7280',
+    fontSize: 14,
+  },
+  socialButtonsContainer: {
+    marginBottom: 20,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  socialButtonText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
   },
 });

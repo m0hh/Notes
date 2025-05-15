@@ -5,7 +5,7 @@ Makefile
 config*
 api*
 /uploads
-./1
+.
 # React Native
 /mobile/node_modules/
 /mobile/android/app/build/

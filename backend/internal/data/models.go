@@ -20,6 +20,7 @@ type Models struct {
 	Notes      NoteModel
 	Folders    FolderModel
 	Embeddings EmbeddingModel
+	SocialAuth SocialUsersModel
 }
 
 func NewModels(db *sql.DB) Models {
@@ -29,5 +30,6 @@ func NewModels(db *sql.DB) Models {
 		Notes:      NoteModel{DB: db},
 		Folders:    FolderModel{DB: db},
 		Embeddings: EmbeddingModel{DB: db},
+		SocialAuth: SocialUsersModel{DB: db},
 	}
 }
