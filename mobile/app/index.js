@@ -3,9 +3,11 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StatusBar } from 'react-native';
 import { useContext } from 'react';
 import { registerRootComponent } from 'expo';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import RecorderScreen from "../screens/RecorderScreen";
 import HistoryScreen from "../screens/HistoryScreen";
@@ -15,12 +17,12 @@ import SingleNoteScreen from "../screens/SingleNoteScreen"; // Import SingleNote
 
 import { RecordingsProvider } from "../context/RecordingsContext";
 import { AuthProvider, AuthContext } from "../context/AuthContext";
+import { theme, customTheme } from '../theme';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 // Main content of the app when logged in
-//sss
 function MainTabs() {
   return (
     <Tab.Navigator
@@ -30,20 +32,49 @@ function MainTabs() {
           if (route.name === "Recorder") {
             iconName = focused ? "mic" : "mic-outline";
           } else if (route.name === "History") {
-            iconName = focused ? "list" : "list-outline";
+            iconName = focused ? "folder" : "folder-outline";
           } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "#6366f1",
-        tabBarInactiveTintColor: "gray",
+        tabBarActiveTintColor: customTheme.colors.primary,
+        tabBarInactiveTintColor: customTheme.colors.textSecondary,
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+          marginBottom: 4,
+        },
+        tabBarStyle: {
+          height: 60,
+          paddingTop: 8,
+          paddingBottom: 8,
+          backgroundColor: customTheme.colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: customTheme.colors.border,
+          ...customTheme.elevation.medium,
+        },
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Recorder" component={RecorderScreen} />
-      <Tab.Screen name="History" component={HistoryScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen 
+        name="Recorder" 
+        component={RecorderScreen} 
+        options={{
+          tabBarLabel: 'Record'
+        }}
+      />
+      <Tab.Screen 
+        name="History" 
+        component={HistoryScreen} 
+        options={{
+          tabBarLabel: 'Notes'
+        }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+      />
     </Tab.Navigator>
   );
 }
@@ -55,26 +86,53 @@ function AppNavigator() {
   // Show loading screen while checking authentication status
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#6366f1" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: customTheme.colors.background }}>
+        <ActivityIndicator size="large" color={customTheme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        cardStyle: { backgroundColor: customTheme.colors.background },
+        cardStyleInterpolator: ({ current, layouts }) => {
+          return {
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+              opacity: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.8, 1],
+              }),
+            },
+            overlayStyle: {
+              opacity: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.4],
+              }),
+            },
+          };
+        },
+      }}
+    >
       {user ? (
         // User is signed in - Group main tabs and detail screen
         <>
           <Stack.Screen
             name="Main"
             component={MainTabs}
-            options={{ headerShown: false }}
           />
           <Stack.Screen
-            name="SingleNote" // Changed from SingleNoteScreen to SingleNote
+            name="SingleNote"
             component={SingleNoteScreen}
-            options={{ headerShown: false }} // Optional: Hide header if managed inside the screen
           />
         </>
       ) : (
@@ -82,7 +140,6 @@ function AppNavigator() {
         <Stack.Screen
           name="Login"
           component={LoginScreen}
-          options={{ headerShown: false }}
         />
       )}
     </Stack.Navigator>
@@ -92,13 +149,18 @@ function AppNavigator() {
 // Main app component with providers
 function App() {
   return (
-    <AuthProvider>
-      <RecordingsProvider>
-        <NavigationContainer>
-          <AppNavigator />
-        </NavigationContainer>
-      </RecordingsProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <PaperProvider theme={theme}>
+        <StatusBar barStyle="dark-content" backgroundColor={customTheme.colors.surface} />
+        <AuthProvider>
+          <RecordingsProvider>
+            <NavigationContainer>
+              <AppNavigator />
+            </NavigationContainer>
+          </RecordingsProvider>
+        </AuthProvider>
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 }
 

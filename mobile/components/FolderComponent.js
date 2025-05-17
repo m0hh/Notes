@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { RecordingsContext } from '../context/RecordingsContext';
 import FolderSelectorModal from './FolderSelectorModal';
 import * as api from '../app/api';
+import { customTheme } from '../theme';
+import { ElevatedCard, GradientButton, SecondaryButton, FolderCard, NoteCard, EmptyState } from './CommonComponents';
 
 export default function FolderComponent({ 
   navigation,
@@ -214,7 +216,7 @@ export default function FolderComponent({
             style={styles.backButton} 
             onPress={handleBackPress}
           >
-            <Ionicons name="arrow-back" size={22} color="#6366f1" />
+            <Ionicons name="arrow-back" size={22} color={customTheme.colors.primary} />
           </TouchableOpacity>
         )}
         
@@ -226,7 +228,7 @@ export default function FolderComponent({
           style={styles.createButton} 
           onPress={() => setShowCreateModal(true)}
         >
-          <Ionicons name="add" size={22} color="#6366f1" />
+          <Ionicons name="add-circle" size={24} color={customTheme.colors.primary} />
         </TouchableOpacity>
       </View>
       
@@ -244,7 +246,9 @@ export default function FolderComponent({
                   style={styles.folderCardContent} 
                   onPress={() => handleFolderNavigation(folder.id, folder.name)}
                 >
-                  <Ionicons name="folder" size={30} color="#6366f1" />
+                  <View style={styles.folderIconContainer}>
+                    <Ionicons name="folder" size={30} color={customTheme.colors.primary} />
+                  </View>
                   <Text style={styles.folderName} numberOfLines={1}>
                     {folder.name}
                   </Text>
@@ -253,7 +257,7 @@ export default function FolderComponent({
                   style={styles.folderOptions}
                   onPress={() => toggleSubfolderMenu(folder.id)}
                 >
-                  <Ionicons name="ellipsis-vertical" size={16} color="#9ca3af" />
+                  <Ionicons name="ellipsis-vertical" size={16} color={customTheme.colors.textSecondary} />
                 </TouchableOpacity>
                 
                 {showSubfolderMenu[folder.id] && (
@@ -265,7 +269,7 @@ export default function FolderComponent({
                         confirmDeleteFolder(folder.id, folder.name);
                       }}
                     >
-                      <Ionicons name="trash" size={18} color="#ef4444" />
+                      <Ionicons name="trash" size={18} color={customTheme.colors.error} />
                       <Text style={styles.menuItemTextDelete}>Delete</Text>
                     </TouchableOpacity>
                   </View>
@@ -281,30 +285,38 @@ export default function FolderComponent({
           Recordings {getCurrentFolderRecordings().length > 0 ? `(${getCurrentFolderRecordings().length})` : ''}
         </Text>
         {getCurrentFolderRecordings().length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={48} color="#d1d5db" />
-            <Text style={styles.emptyStateText}>No recordings in this folder</Text>
-          </View>
+          <EmptyState 
+            icon="document-text-outline"
+            message="No recordings in this folder"
+          />
         ) : (
           <ScrollView>
             {getCurrentFolderRecordings().map(recording => (
-              <TouchableOpacity
+              <ElevatedCard
                 key={recording.id}
                 style={styles.recordingItem}
-                onPress={() => onSelectRecording(recording)}
-                onLongPress={() => handleRecordingOptions(recording)}
               >
-                <Ionicons name="musical-notes-outline" size={24} color="#6366f1" />
-                <View style={styles.recordingInfo}>
-                  <Text style={styles.recordingName}>{recording.name || `Recording ${recording.id}`}</Text>
-                </View>
-                <TouchableOpacity 
-                  style={styles.recordingOptionsButton}
-                  onPress={() => handleRecordingOptions(recording)}
+                <TouchableOpacity
+                  onPress={() => onSelectRecording(recording)}
+                  style={styles.recordingItemContent}
                 >
-                  <Ionicons name="ellipsis-vertical" size={18} color="#9ca3af" />
+                  <View style={styles.recordingIconContainer}>
+                    <Ionicons name="musical-notes-outline" size={24} color={customTheme.colors.primary} />
+                  </View>
+                  <View style={styles.recordingInfo}>
+                    <Text style={styles.recordingName}>{recording.name || `Recording ${recording.id}`}</Text>
+                    <Text style={styles.recordingDate}>
+                      {new Date(recording.timestamp).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.recordingOptionsButton}
+                    onPress={() => handleRecordingOptions(recording)}
+                  >
+                    <Ionicons name="ellipsis-vertical" size={20} color={customTheme.colors.textSecondary} />
+                  </TouchableOpacity>
                 </TouchableOpacity>
-              </TouchableOpacity>
+              </ElevatedCard>
             ))}
           </ScrollView>
         )}
@@ -312,40 +324,60 @@ export default function FolderComponent({
       
       {currentFolderId !== null && (
         <View style={styles.qaSection}>
-          <Text style={styles.sectionTitle}>Ask a question about this folder</Text>
-          <TextInput
-            style={styles.textInputQa}
-            placeholder="Type your question here..."
-            value={queryText}
-            onChangeText={setQueryText}
-          />
-          <Button title="Ask" onPress={handleAskQuery} disabled={isLoadingQuery} />
-          {isLoadingQuery && <ActivityIndicator size="large" color="#6366f1" style={styles.loadingIndicator} />}
-          {queryAnswer && !isLoadingQuery && (
-            <View style={styles.answerContainer}>
-              <Text style={styles.answerTitle}>Answer:</Text>
-              <Text style={styles.answerText}>{queryAnswer}</Text>
-            </View>
-          )}
-          {queryError && !isLoadingQuery && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorTitle}>Error:</Text>
-              <Text style={styles.errorText}>{queryError}</Text>
-            </View>
-          )}
+          <ElevatedCard style={styles.qaCard}>
+            <Text style={styles.qaSectionTitle}>Ask a question about this folder</Text>
+            <TextInput
+              style={styles.textInputQa}
+              placeholder="Type your question here..."
+              value={queryText}
+              onChangeText={setQueryText}
+              placeholderTextColor={customTheme.colors.placeholder}
+            />
+            <GradientButton 
+              title="Ask AI" 
+              onPress={handleAskQuery} 
+              disabled={isLoadingQuery}
+              icon="chatbubble-outline"
+            />
+            {isLoadingQuery && <ActivityIndicator size="large" color={customTheme.colors.primary} style={styles.loadingIndicator} />}
+            {queryAnswer && !isLoadingQuery && (
+              <View style={styles.answerContainer}>
+                <Text style={styles.answerTitle}>Answer:</Text>
+                <Text style={styles.answerText}>{queryAnswer}</Text>
+              </View>
+            )}
+            {queryError && !isLoadingQuery && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorTitle}>Error:</Text>
+                <Text style={styles.errorText}>{queryError}</Text>
+              </View>
+            )}
+          </ElevatedCard>
         </View>
       )}
       
       <Modal
         visible={showCreateModal}
         transparent={true}
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowCreateModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Create New Folder</Text>
+              <TouchableOpacity 
+                style={styles.modalCloseButton} 
+                onPress={() => {
+                  setShowCreateModal(false);
+                  setNewFolderName('');
+                }}
+              >
+                <Ionicons name="close" size={24} color={customTheme.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalContent}>
               <Text style={styles.modalSubtitle}>
                 {(onNavigateToFolder ? selectedFolderId : currentFolderId) === null
                   ? "Create folder in Root"
@@ -357,26 +389,25 @@ export default function FolderComponent({
                 value={newFolderName}
                 onChangeText={setNewFolderName}
                 placeholder="Folder name"
+                placeholderTextColor={customTheme.colors.placeholder}
                 autoFocus
               />
               
               <View style={styles.modalButtons}>
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.cancelButton]} 
+                <SecondaryButton 
+                  title="Cancel"
                   onPress={() => {
                     setShowCreateModal(false);
                     setNewFolderName('');
                   }}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
+                  style={styles.cancelButton}
+                />
                 
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.createModalButton]} 
+                <GradientButton 
+                  title="Create"
                   onPress={handleCreateFolder}
-                >
-                  <Text style={styles.createModalButtonText}>Create</Text>
-                </TouchableOpacity>
+                  style={styles.createModalButton}
+                />
               </View>
             </View>
           </View>
@@ -400,15 +431,15 @@ export default function FolderComponent({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: customTheme.colors.background,
   },
   folderHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: customTheme.colors.border,
   },
   backButton: {
     padding: 8,
@@ -417,109 +448,113 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#111827',
+    color: customTheme.colors.text,
     marginLeft: 8,
   },
   createButton: {
     padding: 8,
   },
   subfolderSection: {
-    marginVertical: 12,
+    marginVertical: 16,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4b5563',
-    marginBottom: 8,
+    fontWeight: '600',
+    color: customTheme.colors.text,
+    marginBottom: 12,
     paddingHorizontal: 16,
   },
   folderRow: {
     paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   folderCard: {
     position: 'relative',
-    width: 100,
-    marginRight: 8,
-    borderRadius: 8,
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    width: 120,
+    marginRight: 12,
+    borderRadius: 16,
+    backgroundColor: customTheme.colors.surface,
+    ...customTheme.elevation.small,
   },
   folderCardContent: {
     alignItems: 'center',
-    padding: 12,
+    padding: 16,
+  },
+  folderIconContainer: {
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    backgroundColor: customTheme.colors.surfaceVariant,
+    borderRadius: 30,
   },
   folderName: {
-    fontSize: 12,
-    color: '#4b5563',
-    marginTop: 4,
+    fontSize: 14,
+    color: customTheme.colors.text,
     textAlign: 'center',
   },
   folderOptions: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 8,
+    right: 8,
     padding: 4,
   },
   folderMenu: {
     position: 'absolute',
     top: 24,
     right: 0,
-    backgroundColor: 'white',
-    borderRadius: 8,
+    backgroundColor: customTheme.colors.surface,
+    borderRadius: 12,
     padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
+    ...customTheme.elevation.medium,
     zIndex: 100,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 12,
   },
   menuItemTextDelete: {
     marginLeft: 8,
     fontSize: 14,
-    color: '#ef4444',
+    color: customTheme.colors.error,
   },
   recordingsSection: {
     flex: 1,
-    marginTop: 4,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyStateText: {
     marginTop: 8,
-    fontSize: 16,
-    color: '#6b7280',
+    paddingHorizontal: 16,
   },
   recordingItem: {
+    marginBottom: 12,
+  },
+  recordingItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#fff',
+    padding: 4,
+  },
+  recordingIconContainer: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: customTheme.colors.surfaceVariant,
+    marginRight: 12,
   },
   recordingInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   recordingName: {
     fontSize: 16,
-    color: '#374151',
+    color: customTheme.colors.text,
+    fontWeight: '500',
+  },
+  recordingDate: {
+    fontSize: 12,
+    color: customTheme.colors.textSecondary,
+    marginTop: 4,
   },
   recordingOptionsButton: {
     padding: 8,
@@ -527,144 +562,118 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    padding: 20,
   },
   modalContainer: {
-    width: '90%',
-    maxWidth: 400,
+    width: '100%',
+    backgroundColor: customTheme.colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    ...customTheme.elevation.large,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: customTheme.colors.border,
+  },
+  modalCloseButton: {
+    padding: 4,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 8,
-    textAlign: 'center',
+    color: customTheme.colors.text,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 16,
-    textAlign: 'center',
+    color: customTheme.colors.textSecondary,
+    marginBottom: 20,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
+    borderColor: customTheme.colors.border,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    marginBottom: 16,
+    marginBottom: 20,
+    backgroundColor: customTheme.colors.surface,
+    color: customTheme.colors.text,
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  modalButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginLeft: 8,
-  },
-  createModalButton: {
-    backgroundColor: '#6366f1',
-  },
-  createModalButtonText: {
-    color: 'white',
-    fontWeight: '500',
-    fontSize: 16,
+    justifyContent: 'space-between',
   },
   cancelButton: {
-    backgroundColor: '#f3f4f6',
+    flex: 1,
+    marginRight: 8,
   },
-  cancelButtonText: {
-    color: '#4b5563',
-    fontSize: 16,
-  },
-  folderSelectionList: {
-    maxHeight: 250,
-    marginBottom: 16,
-  },
-  folderSelectionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  selectedFolderItem: {
-    backgroundColor: '#ede9fe',
-  },
-  folderSelectionInfo: {
-    marginLeft: 12,
-  },
-  folderSelectionName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1f2937',
-  },
-  folderSelectionPath: {
-    fontSize: 12,
-    color: '#6b7280',
+  createModalButton: {
+    flex: 1,
+    marginLeft: 8,
   },
   qaSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    marginTop: 8,
+    padding: 16,
+  },
+  qaCard: {
+    padding: 16,
+  },
+  qaSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: customTheme.colors.text,
+    marginBottom: 16,
   },
   textInputQa: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
+    borderColor: customTheme.colors.border,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    marginBottom: 12,
+    marginBottom: 16,
     backgroundColor: 'white',
+    color: customTheme.colors.text,
   },
   loadingIndicator: {
-    marginTop: 10,
+    marginVertical: 16,
   },
   answerContainer: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#eef2ff',
-    borderRadius: 8,
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: customTheme.colors.primaryContainer,
+    borderRadius: 12,
   },
   answerTitle: {
     fontWeight: 'bold',
-    color: '#4338ca',
-    marginBottom: 4,
+    color: customTheme.colors.primary,
+    marginBottom: 8,
   },
   answerText: {
     fontSize: 15,
-    color: '#3730a3',
+    color: customTheme.colors.text,
+    lineHeight: 22,
   },
   errorContainer: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#fee2e2',
-    borderRadius: 8,
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: customTheme.colors.errorContainer,
+    borderRadius: 12,
   },
   errorTitle: {
     fontWeight: 'bold',
-    color: '#b91c1c',
-    marginBottom: 4,
+    color: customTheme.colors.error,
+    marginBottom: 8,
   },
   errorText: {
     fontSize: 15,
-    color: '#991b1b',
+    color: customTheme.colors.error,
   },
 });

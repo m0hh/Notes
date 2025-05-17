@@ -7,21 +7,23 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
   Platform,
   StatusBar,
   Alert,
   TextInput,
   Modal,
   ScrollView,
-  FlatList,
 } from "react-native"
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Audio } from "expo-av"
 import { Ionicons } from "@expo/vector-icons"
 import { RecordingsContext } from "../context/RecordingsContext"
 import { AuthContext } from "../context/AuthContext"
 import { processAudioWithGemini } from "../app/api"
 import FolderSelectorModal from "../components/FolderSelectorModal"
+import { LinearGradient } from 'react-native-linear-gradient'
+import { customTheme } from '../theme'
+import { Header, ElevatedCard, GradientButton, SecondaryButton } from '../components/CommonComponents'
 
 export default function RecorderScreen() {
   const [recording, setRecording] = useState(null)
@@ -261,18 +263,20 @@ export default function RecorderScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <Text style={styles.title}>Voice Notes</Text>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor={customTheme.colors.background} />
+      
+      <Header title="Voice Notes" />
+      
       <View style={styles.recorderContainer}>
         {isRecording ? (
-          <View style={styles.recordingInfo}>
-            <Text style={styles.recordingText}>Recording...</Text>
+          <ElevatedCard style={styles.recordingInfoCard}>
+            <Text style={styles.recordingText}>Recording in progress...</Text>
             <Text style={styles.timerText}>{formatTime(recordingDuration)}</Text>
-            <View style={styles.recordingIndicator} />
-          </View>
+            <View style={styles.recordingIndicatorContainer}>
+              <View style={styles.recordingIndicator} />
+            </View>
+          </ElevatedCard>
         ) : (
           <Text style={styles.instructionText}>
             {isLoggedIn
@@ -280,22 +284,34 @@ export default function RecorderScreen() {
               : "Please log in to record voice notes"}
           </Text>
         )}
-        <TouchableOpacity
+        
+        <LinearGradient
+          colors={isRecording 
+            ? [customTheme.colors.error, customTheme.colors.error + '80'] 
+            : [customTheme.colors.primary, customTheme.colors.primaryDark]}
           style={[
-            styles.recordButton,
-            isRecording ? styles.recordingButton : null,
+            styles.recordButtonGradient,
             !isLoggedIn ? styles.disabledButton : null,
           ]}
-          onPress={isRecording ? stopRecording : startRecording}
-          disabled={isSending || !isLoggedIn}
         >
-          <Ionicons name={isRecording ? "square" : "mic"} size={32} color="white" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.recordButton}
+            onPress={isRecording ? stopRecording : startRecording}
+            disabled={isSending || !isLoggedIn}
+          >
+            <Ionicons 
+              name={isRecording ? "square" : "mic"} 
+              size={32} 
+              color="white" 
+            />
+          </TouchableOpacity>
+        </LinearGradient>
+        
         {isSending && (
-          <View style={styles.sendingContainer}>
-            <ActivityIndicator size="small" color="#6366f1" />
+          <ElevatedCard style={styles.sendingContainer}>
+            <ActivityIndicator size="small" color={customTheme.colors.primary} />
             <Text style={styles.sendingText}>Processing with AI...</Text>
-          </View>
+          </ElevatedCard>
         )}
       </View>
 
@@ -308,93 +324,99 @@ export default function RecorderScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <ScrollView>
-              <Text style={styles.modalTitle}>Recording Details</Text>
-              
-              <Text style={styles.inputLabel}>Title (required)</Text>
-              <TextInput
-                style={styles.input}
-                value={recordingDetails.title}
-                onChangeText={(text) => setRecordingDetails({...recordingDetails, title: text})}
-                placeholder="Enter recording title"
-              />
-              
-              <Text style={styles.inputLabel}>Save to Folder</Text>
-              <TouchableOpacity 
-                style={styles.folderSelector}
-                onPress={() => {
-                  console.log("[RecorderScreen] User tapped to select folder. Opening FolderSelectorModal.");
-                  setShowFolderSelector(true);
-                }}
-              >
-                <Ionicons 
-                  name={recordingDetails.folderId ? "folder" : "folder-outline"} 
-                  size={20} 
-                  color="#6366f1" 
+            <Header 
+              title="Recording Details" 
+              containerStyle={styles.modalHeader}
+              onBack={() => setShowModal(false)}
+            />
+            
+            <ScrollView style={styles.modalScrollView}>
+              <View style={styles.modalContent}>
+                <Text style={styles.inputLabel}>Title <Text style={{color: customTheme.colors.error}}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  value={recordingDetails.title}
+                  onChangeText={(text) => setRecordingDetails({...recordingDetails, title: text})}
+                  placeholder="Enter recording title"
+                  placeholderTextColor={customTheme.colors.placeholder}
                 />
-                <View style={styles.folderSelectorTextContainer}>
-                  <Text style={styles.folderSelectorText}>
-                    {getFolderName(recordingDetails.folderId)}
-                  </Text>
-                  <Text style={styles.folderPathText}>
-                    {getFolderPath(recordingDetails.folderId)}
-                  </Text>
+                
+                <Text style={styles.inputLabel}>Save to Folder</Text>
+                <TouchableOpacity 
+                  style={styles.folderSelector}
+                  onPress={() => {
+                    console.log("[RecorderScreen] User tapped to select folder. Opening FolderSelectorModal.");
+                    setShowFolderSelector(true);
+                  }}
+                >
+                  <Ionicons 
+                    name={recordingDetails.folderId ? "folder" : "folder-outline"} 
+                    size={20} 
+                    color={customTheme.colors.primary} 
+                  />
+                  <View style={styles.folderSelectorTextContainer}>
+                    <Text style={styles.folderSelectorText}>
+                      {getFolderName(recordingDetails.folderId)}
+                    </Text>
+                    <Text style={styles.folderPathText}>
+                      {getFolderPath(recordingDetails.folderId)}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={customTheme.colors.textSecondary} />
+                </TouchableOpacity>
+                
+                <Text style={styles.inputLabel}>Summarization Prompt (optional)</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={recordingDetails.prompt}
+                  onChangeText={(text) => setRecordingDetails({...recordingDetails, prompt: text})}
+                  placeholder="How would you like your audio to be summarized? Default is a summary with key points and main topics."
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  placeholderTextColor={customTheme.colors.placeholder}
+                />
+                
+                <Text style={styles.inputLabel}>Summarization Language</Text>
+                <View style={styles.languageButtons}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.languageButton, 
+                      recordingDetails.language === 'english' && styles.selectedLanguage
+                    ]}
+                    onPress={() => setRecordingDetails({...recordingDetails, language: 'english'})}
+                  >
+                    <Text style={[
+                      styles.languageButtonText,
+                      recordingDetails.language === 'english' && styles.selectedLanguageText
+                    ]}>English</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[
+                      styles.languageButton, 
+                      recordingDetails.language === 'arabic' && styles.selectedLanguage
+                    ]}
+                    onPress={() => setRecordingDetails({...recordingDetails, language: 'arabic'})}
+                  >
+                    <Text style={[
+                      styles.languageButtonText,
+                      recordingDetails.language === 'arabic' && styles.selectedLanguageText
+                    ]}>Arabic</Text>
+                  </TouchableOpacity>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-              </TouchableOpacity>
-              
-              <Text style={styles.inputLabel}>Summarization Prompt (optional)</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={recordingDetails.prompt}
-                onChangeText={(text) => setRecordingDetails({...recordingDetails, prompt: text})}
-                placeholder="How would you like your audio to be summarized? Default is a summary with key points and main topics."
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-              
-              <Text style={styles.inputLabel}>Summarization Language</Text>
-              <View style={styles.languageButtons}>
-                <TouchableOpacity 
-                  style={[
-                    styles.languageButton, 
-                    recordingDetails.language === 'english' && styles.selectedLanguage
-                  ]}
-                  onPress={() => setRecordingDetails({...recordingDetails, language: 'english'})}
-                >
-                  <Text style={[
-                    styles.languageButtonText,
-                    recordingDetails.language === 'english' && styles.selectedLanguageText
-                  ]}>English</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[
-                    styles.languageButton, 
-                    recordingDetails.language === 'arabic' && styles.selectedLanguage
-                  ]}
-                  onPress={() => setRecordingDetails({...recordingDetails, language: 'arabic'})}
-                >
-                  <Text style={[
-                    styles.languageButtonText,
-                    recordingDetails.language === 'arabic' && styles.selectedLanguageText
-                  ]}>Arabic</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity 
-                  style={styles.cancelButton} 
-                  onPress={() => setShowModal(false)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.submitButton} 
-                  onPress={handleSubmitRecording}
-                >
-                  <Text style={styles.submitButtonText}>Process Recording</Text>
-                </TouchableOpacity>
+                
+                <View style={styles.buttonContainer}>
+                  <SecondaryButton 
+                    title="Cancel"
+                    onPress={() => setShowModal(false)}
+                    style={styles.cancelButton}
+                  />
+                  <GradientButton 
+                    title="Process Recording"
+                    onPress={handleSubmitRecording}
+                    style={styles.submitButton}
+                  />
+                </View>
               </View>
             </ScrollView>
           </View>
@@ -418,18 +440,7 @@ export default function RecorderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9fafb",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
+    backgroundColor: customTheme.colors.background,
   },
   recorderContainer: {
     flex: 1,
@@ -439,153 +450,155 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     fontSize: 16,
-    color: "#4b5563",
+    color: customTheme.colors.textSecondary,
     marginBottom: 40,
     textAlign: "center",
+    maxWidth: '80%',
+  },
+  recordButtonGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    ...customTheme.elevation.medium,
   },
   recordButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#6366f1",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  recordingButton: {
-    backgroundColor: "#ef4444",
   },
   disabledButton: {
-    backgroundColor: "#9ca3af",
+    backgroundColor: customTheme.colors.disabled,
+    opacity: 0.6,
   },
-  recordingInfo: {
+  recordingInfoCard: {
     alignItems: "center",
     marginBottom: 40,
+    padding: 24,
+    width: '90%',
   },
   recordingText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#ef4444",
+    color: customTheme.colors.error,
     marginBottom: 10,
   },
   timerText: {
-    fontSize: 36,
+    fontSize: 42,
     fontWeight: "bold",
-    color: "#111827",
+    color: customTheme.colors.text,
     marginBottom: 10,
+  },
+  recordingIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
   },
   recordingIndicator: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#ef4444",
+    backgroundColor: customTheme.colors.error,
     opacity: 1,
-    marginBottom: 20,
+    marginHorizontal: 4,
   },
   sendingContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   sendingText: {
     marginLeft: 10,
-    color: "#6366f1",
+    color: customTheme.colors.primary,
     fontSize: 14,
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
+    justifyContent: "flex-end", // Slide up from bottom
     alignItems: "center",
-    padding: 20,
   },
   modalContainer: {
     backgroundColor: "white",
-    borderRadius: 10,
-    padding: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     width: "100%",
-    maxHeight: "80%",
+    maxHeight: "90%",
+    ...customTheme.elevation.large,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "#111827",
-    textAlign: "center",
+  modalHeader: {
+    borderBottomWidth: 0,
+    paddingVertical: 16,
+  },
+  modalScrollView: {
+    flex: 1,
+  },
+  modalContent: {
+    padding: 20,
+    paddingTop: 0,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: "bold",
-    color: "#4b5563",
-    marginBottom: 5,
+    fontWeight: "600",
+    color: customTheme.colors.text,
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: customTheme.colors.border,
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 20,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "white",
+    fontSize: 16,
+    color: customTheme.colors.text,
   },
   textArea: {
-    height: 100,
+    height: 120,
+    textAlignVertical: 'top',
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
+    marginBottom: 20,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: "#e5e7eb",
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginRight: 10,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    color: "#4b5563",
-    fontWeight: "bold",
+    marginRight: 8,
   },
   submitButton: {
     flex: 1.5,
-    backgroundColor: "#6366f1",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  submitButtonText: {
-    color: "white",
-    fontWeight: "bold",
+    marginLeft: 8,
   },
   languageButtons: {
     flexDirection: "row",
-    marginBottom: 20,
+    marginBottom: 24,
   },
   languageButton: {
     flex: 1,
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
+    borderColor: customTheme.colors.border,
+    borderRadius: 12,
     alignItems: "center",
-    marginRight: 10,
+    marginRight: 12,
+    backgroundColor: 'white',
   },
   selectedLanguage: {
-    backgroundColor: "#6366f1",
-    borderColor: "#6366f1",
+    backgroundColor: customTheme.colors.primary,
+    borderColor: customTheme.colors.primary,
   },
   languageButtonText: {
-    fontWeight: "bold",
-    color: "#4b5563",
+    fontWeight: "600",
+    color: customTheme.colors.text,
   },
   selectedLanguageText: {
     color: "white",
@@ -594,23 +607,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: customTheme.colors.border,
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 20,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "white",
   },
   folderSelectorTextContainer: {
     flex: 1,
     marginLeft: 10,
   },
   folderSelectorText: {
-    color: "#111827",
+    color: customTheme.colors.text,
     fontWeight: "500",
+    fontSize: 16,
   },
   folderPathText: {
-    color: "#9ca3af",
+    color: customTheme.colors.textSecondary,
     fontSize: 12,
     marginTop: 2,
   },
-})
+});

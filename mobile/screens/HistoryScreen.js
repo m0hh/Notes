@@ -4,15 +4,17 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  SafeAreaView,  
   StatusBar,
   RefreshControl,
   ScrollView
 } from "react-native"
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from "@expo/vector-icons"
 import { RecordingsContext } from "../context/RecordingsContext"
 import { AuthContext } from "../context/AuthContext"
 import FolderComponent from "../components/FolderComponent"
+import { Header, EmptyState } from '../components/CommonComponents'
+import { customTheme } from '../theme'
 
 export default function HistoryScreen({ navigation }) {
   const { 
@@ -36,17 +38,21 @@ export default function HistoryScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <Text style={styles.title}>Folders</Text>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor={customTheme.colors.background} />
+      <Header title="Your Notes" />
       
       {isLoggedIn ? (
         <ScrollView
           style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing || loading} onRefresh={onRefresh} />
+            <RefreshControl 
+              refreshing={refreshing || loading} 
+              onRefresh={onRefresh}
+              colors={[customTheme.colors.primary]}
+              tintColor={customTheme.colors.primary}
+            />
           }
         >
           <FolderComponent 
@@ -55,10 +61,11 @@ export default function HistoryScreen({ navigation }) {
           />
         </ScrollView>
       ) : (
-        <View style={styles.emptyState}>
-          <Ionicons name="lock-closed" size={48} color="#d1d5db" />
-          <Text style={styles.emptyStateText}>Please log in to view your recordings</Text>
-        </View>
+        <EmptyState
+          icon="lock-closed"
+          message="Please log in to view your notes"
+          actionButton={null}
+        />
       )}
     </SafeAreaView>
   )
@@ -67,33 +74,12 @@ export default function HistoryScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
+    backgroundColor: customTheme.colors.background,
   },
   scrollView: {
     flex: 1,
   },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
+  scrollViewContent: {
+    paddingBottom: 20,
   },
-  emptyStateText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#6b7280",
-    textAlign: "center",
-  },
-})
+});

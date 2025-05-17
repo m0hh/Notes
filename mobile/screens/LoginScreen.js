@@ -10,9 +10,14 @@ import {
   Platform,
   ScrollView,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { Ionicons, AntDesign } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'react-native-linear-gradient';
+import { customTheme } from '../theme';
+import { GradientButton, SecondaryButton } from '../components/CommonComponents';
 
 export default function LoginScreen({ navigation }) {
   const { 
@@ -95,208 +100,229 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.logoContainer}>
-          <Ionicons name="mic" size={64} color="#6366f1" />
-          <Text style={styles.appName}>NotesGPT</Text>
-        </View>
-        
-        <Text style={styles.title}>{isLogin ? 'Welcome Back' : 'Create Account'}</Text>
-        <Text style={styles.subtitle}>
-          {isLogin 
-            ? 'Log in to access your notes' 
-            : 'Sign up to start recording and saving your voice notes'}
-        </Text>
-        
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-        
-        <View style={styles.formContainer}>
-          {!isLogin && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Name</Text>
-              <TextInput
-                style={[styles.input, formErrors.name && styles.inputError]}
-                placeholder="Your name"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-              />
-              {formErrors.name && <Text style={styles.errorMessage}>{formErrors.name}</Text>}
-            </View>
-          )}
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[styles.input, formErrors.email && styles.inputError]}
-              placeholder="your.email@example.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {formErrors.email && <Text style={styles.errorMessage}>{formErrors.email}</Text>}
-          </View>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={[styles.input, formErrors.password && styles.inputError]}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-            {formErrors.password && <Text style={styles.errorMessage}>{formErrors.password}</Text>}
-          </View>
-          
-          {!isLogin && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <TextInput
-                style={[styles.input, formErrors.confirmPassword && styles.inputError]}
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-              />
-              {formErrors.confirmPassword && (
-                <Text style={styles.errorMessage}>{formErrors.confirmPassword}</Text>
-              )}
-            </View>
-          )}
-          
-          <TouchableOpacity
-            style={styles.submitButton}
-            onPress={handleSubmit}
-            disabled={loading}
+    <SafeAreaView style={{ flex: 1, backgroundColor: customTheme.colors.background }}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.container}>
+          <LinearGradient
+            colors={[customTheme.colors.primary, customTheme.colors.accent]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoContainer}
           >
-            {loading ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.submitButtonText}>
-                {isLogin ? 'Log In' : 'Sign Up'}
-              </Text>
-            )}
-          </TouchableOpacity>
+            <View style={styles.logoIconContainer}>
+              <Ionicons name="mic" size={40} color="white" />
+            </View>
+            <Text style={styles.appName}>NotesGPT</Text>
+          </LinearGradient>
           
-          {isLogin && (
-            <>
-              <View style={styles.orContainer}>
-                <View style={styles.orLine} />
-                <Text style={styles.orText}>OR</Text>
-                <View style={styles.orLine} />
+          <View style={styles.formWrapper}>
+            <Text style={styles.title}>{isLogin ? 'Welcome Back' : 'Create Account'}</Text>
+            <Text style={styles.subtitle}>
+              {isLogin 
+                ? 'Log in to access your voice notes' 
+                : 'Sign up to start recording and saving your voice notes'}
+            </Text>
+            
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+            
+            <View style={styles.formContainer}>
+              {!isLogin && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Name</Text>
+                  <TextInput
+                    style={[styles.input, formErrors.name && styles.inputError]}
+                    placeholder="Your name"
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize="words"
+                    placeholderTextColor={customTheme.colors.placeholder}
+                  />
+                  {formErrors.name && <Text style={styles.errorMessage}>{formErrors.name}</Text>}
+                </View>
+              )}
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={[styles.input, formErrors.email && styles.inputError]}
+                  placeholder="your.email@example.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor={customTheme.colors.placeholder}
+                />
+                {formErrors.email && <Text style={styles.errorMessage}>{formErrors.email}</Text>}
               </View>
               
-              <View style={styles.socialButtonsContainer}>
-                {isGoogleAuthAvailable && (
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    onPress={handleGoogleSignIn}
-                    disabled={loading}
-                  >
-                    <AntDesign name="google" size={24} color="#DB4437" />
-                    <Text style={styles.socialButtonText}>Sign in with Google</Text>
-                  </TouchableOpacity>
-                )}
-                
-                {isAppleAuthAvailable && (
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    onPress={handleAppleSignIn}
-                    disabled={loading}
-                  >
-                    <AntDesign name="apple1" size={24} color="black" />
-                    <Text style={styles.socialButtonText}>Sign in with Apple</Text>
-                  </TouchableOpacity>
-                )}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={[styles.input, formErrors.password && styles.inputError]}
+                  placeholder="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  placeholderTextColor={customTheme.colors.placeholder}
+                />
+                {formErrors.password && <Text style={styles.errorMessage}>{formErrors.password}</Text>}
               </View>
-            </>
-          )}
-          
-          <TouchableOpacity style={styles.toggleContainer} onPress={toggleMode}>
-            <Text style={styles.toggleText}>
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : 'Already have an account? Log in'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+              
+              {!isLogin && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <TextInput
+                    style={[styles.input, formErrors.confirmPassword && styles.inputError]}
+                    placeholder="Confirm your password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                    placeholderTextColor={customTheme.colors.placeholder}
+                  />
+                  {formErrors.confirmPassword && (
+                    <Text style={styles.errorMessage}>{formErrors.confirmPassword}</Text>
+                  )}
+                </View>
+              )}
+              
+              <GradientButton
+                title={isLogin ? 'Log In' : 'Sign Up'}
+                onPress={handleSubmit}
+                disabled={loading}
+                style={styles.submitButton}
+              />
+              
+              {isLogin && (
+                <>
+                  <View style={styles.orContainer}>
+                    <View style={styles.orLine} />
+                    <Text style={styles.orText}>OR</Text>
+                    <View style={styles.orLine} />
+                  </View>
+                  
+                  <View style={styles.socialButtonsContainer}>
+                    {isGoogleAuthAvailable && (
+                      <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={handleGoogleSignIn}
+                        disabled={loading}
+                      >
+                        <AntDesign name="google" size={20} color="#DB4437" />
+                        <Text style={styles.socialButtonText}>Sign in with Google</Text>
+                      </TouchableOpacity>
+                    )}
+                    
+                    {isAppleAuthAvailable && (
+                      <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={handleAppleSignIn}
+                        disabled={loading}
+                      >
+                        <AntDesign name="apple1" size={20} color="black" />
+                        <Text style={styles.socialButtonText}>Sign in with Apple</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </>
+              )}
+              
+              <TouchableOpacity style={styles.toggleContainer} onPress={toggleMode}>
+                <Text style={styles.toggleText}>
+                  {isLogin
+                    ? "Don't have an account? Sign up"
+                    : 'Already have an account? Log in'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#f9fafb',
-    padding: 20,
-    justifyContent: 'center',
+    backgroundColor: customTheme.colors.background,
   },
   logoContainer: {
+    paddingTop: 60,
+    paddingBottom: 60,
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'center',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  logoIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   appName: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#111827',
-    marginTop: 10,
+    color: 'white',
+  },
+  formWrapper: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#111827',
-    textAlign: 'center',
+    color: customTheme.colors.text,
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 24,
+    color: customTheme.colors.textSecondary,
+    marginBottom: 32,
   },
   formContainer: {
     width: '100%',
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#4b5563',
-    marginBottom: 6,
+    fontWeight: '600',
+    color: customTheme.colors.text,
+    marginBottom: 8,
   },
   input: {
     backgroundColor: 'white',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: customTheme.colors.border,
+    fontSize: 16,
+    color: customTheme.colors.text,
   },
   inputError: {
-    borderColor: '#ef4444',
+    borderColor: customTheme.colors.error,
   },
   errorMessage: {
-    color: '#ef4444',
+    color: customTheme.colors.error,
     fontSize: 12,
     marginTop: 4,
+    marginLeft: 4,
   },
   submitButton: {
-    backgroundColor: '#6366f1',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
     marginTop: 8,
   },
   submitButtonText: {
@@ -305,56 +331,62 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   toggleContainer: {
-    marginTop: 16,
+    marginTop: 20,
     alignItems: 'center',
   },
   toggleText: {
     fontSize: 14,
-    color: '#6366f1',
-    fontWeight: '500',
+    color: customTheme.colors.primary,
+    fontWeight: '600',
   },
   errorContainer: {
-    backgroundColor: '#fee2e2',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    backgroundColor: customTheme.colors.errorContainer,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderLeftWidth: 4,
+    borderLeftColor: customTheme.colors.error,
   },
   errorText: {
-    color: '#b91c1c',
+    color: customTheme.colors.error,
+    fontSize: 14,
   },
   orContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 24,
   },
   orLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#d1d5db',
+    backgroundColor: customTheme.colors.border,
   },
   orText: {
-    marginHorizontal: 10,
-    color: '#6b7280',
+    marginHorizontal: 12,
+    color: customTheme.colors.textSecondary,
     fontSize: 14,
+    fontWeight: '500',
   },
   socialButtonsContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'white',
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderColor: customTheme.colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 12,
+    ...customTheme.elevation.small,
   },
   socialButtonText: {
     marginLeft: 12,
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
+    color: customTheme.colors.text,
   },
 });

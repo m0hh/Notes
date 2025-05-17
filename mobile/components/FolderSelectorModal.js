@@ -1,34 +1,142 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react'; // Added useMemo
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { Modal, View, Text, TouchableOpacity, FlatList, TextInput, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { RecordingsContext } from '../context/RecordingsContext';
-import { getFolders } from '../app/api'; // Import getFolders
+import { getFolders } from '../app/api';
+import { customTheme } from '../theme';
+import { GradientButton, SecondaryButton } from './CommonComponents';
 
 const styles = StyleSheet.create({
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContainer: { width: '90%', maxHeight: '80%', backgroundColor: 'white', borderRadius: 10, padding: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  modalTitleText: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  closeButton: { padding: 5 },
-  breadcrumbsContainer: { flexDirection: 'row', marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 5 },
-  breadcrumbItem: { fontSize: 14, color: '#007AFF', marginRight: 5, paddingVertical: 5 },
-  breadcrumbSeparator: { fontSize: 14, color: '#ccc', marginRight: 5, paddingVertical: 5 },
-  breadcrumbActive: { fontSize: 14, color: '#333', fontWeight: 'bold', marginRight: 5, paddingVertical: 5 },
-  folderItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  folderName: { marginLeft: 10, fontSize: 16, color: '#333' },
-  emptyList: { alignItems: 'center', paddingVertical: 20 },
-  emptyText: { fontSize: 16, color: '#888' },
-  actionsContainer: { marginTop: 15, borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 10 },
-  actionButton: { backgroundColor: '#007AFF', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginBottom: 10 },
-  actionButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  createFolderContainer: { marginTop: 10, marginBottom: 10 },
-  createFolderInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 10, fontSize:16 },
-  createFolderButtonRow: { flexDirection: 'row', justifyContent: 'space-between'},
-  createButton: { backgroundColor: '#4CAF50', paddingVertical: 10, paddingHorizontal: 15, borderRadius: 8, flex: 0.48, alignItems: 'center'},
-  cancelCreateButton: { backgroundColor: '#aaa', paddingVertical: 10, paddingHorizontal: 15, borderRadius: 8, flex: 0.48, alignItems: 'center'},
-  buttonText: { color: 'white', fontWeight: 'bold'},
-  loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center', borderRadius: 10, zIndex: 10 },
-  listContentContainer: { flexGrow: 1 }
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.5)', 
+    justifyContent: 'flex-end', 
+    alignItems: 'center',
+  },
+  modalContainer: { 
+    width: '100%', 
+    maxHeight: '90%', 
+    backgroundColor: customTheme.colors.surface, 
+    borderTopLeftRadius: 24, 
+    borderTopRightRadius: 24, 
+    padding: 20, 
+    ...customTheme.elevation.large,
+  },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 16,
+  },
+  modalTitleText: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: customTheme.colors.text,
+  },
+  closeButton: { 
+    padding: 5 
+  },
+  breadcrumbsContainer: { 
+    flexDirection: 'row', 
+    marginBottom: 16, 
+    borderBottomWidth: 1, 
+    borderBottomColor: customTheme.colors.border, 
+    paddingBottom: 12,
+  },
+  breadcrumbItem: { 
+    fontSize: 14, 
+    color: customTheme.colors.primary, 
+    marginRight: 5, 
+    paddingVertical: 5,
+  },
+  breadcrumbSeparator: { 
+    fontSize: 14, 
+    color: customTheme.colors.textSecondary, 
+    marginRight: 5, 
+    paddingVertical: 5,
+  },
+  breadcrumbActive: { 
+    fontSize: 14, 
+    color: customTheme.colors.text, 
+    fontWeight: 'bold', 
+    marginRight: 5, 
+    paddingVertical: 5,
+  },
+  folderListContainer: {
+    flex: 1,
+    minHeight: 200,
+    marginVertical: 12,
+  },
+  folderItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingVertical: 12, 
+    paddingHorizontal: 8,
+    borderBottomWidth: 1, 
+    borderBottomColor: customTheme.colors.border,
+  },
+  folderItemIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: customTheme.colors.surfaceVariant,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  folderName: { 
+    marginLeft: 10, 
+    fontSize: 16, 
+    color: customTheme.colors.text,
+  },
+  emptyList: { 
+    alignItems: 'center', 
+    paddingVertical: 24,
+  },
+  emptyText: { 
+    fontSize: 16, 
+    color: customTheme.colors.textSecondary,
+  },
+  actionsContainer: { 
+    marginTop: 16, 
+    borderTopWidth: 1, 
+    borderTopColor: customTheme.colors.border, 
+    paddingTop: 16,
+  },
+  createFolderContainer: { 
+    marginTop: 10, 
+    marginBottom: 10,
+  },
+  createFolderInput: { 
+    borderWidth: 1, 
+    borderColor: customTheme.colors.border, 
+    borderRadius: 12, 
+    paddingHorizontal: 16, 
+    paddingVertical: 12, 
+    marginBottom: 16, 
+    fontSize: 16,
+    backgroundColor: customTheme.colors.surface,
+    color: customTheme.colors.text,
+  },
+  createFolderButtonRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+  },
+  loadingOverlay: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0, 
+    backgroundColor: 'rgba(255,255,255,0.7)', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderRadius: 10, 
+    zIndex: 10,
+  },
+  listContentContainer: { 
+    flexGrow: 1,
+  }
 });
 
 export default function FolderSelectorModal({
@@ -192,7 +300,7 @@ export default function FolderSelectorModal({
     <Modal
       visible={visible}
       transparent={true}
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
@@ -200,22 +308,24 @@ export default function FolderSelectorModal({
           <View style={styles.header}>
             <Text style={styles.modalTitleText}>{modalTitleText}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close-circle-outline" size={28} color="#555" />
+              <Ionicons name="close-circle" size={28} color={customTheme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
           {renderBreadcrumbTrail()}
 
-          <View style={{ flexShrink: 1, minHeight: 100 }}>
+          <View style={styles.folderListContainer}>
             {isLoadingForList && !isCreatingFolder ? (
-              <ActivityIndicator size="large" color="#007AFF" style={{ marginVertical: 20 }} />
+              <ActivityIndicator size="large" color={customTheme.colors.primary} style={{ marginVertical: 20 }} />
             ) : (
               <FlatList
                 data={modalDisplayedFolders}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
                   <TouchableOpacity style={styles.folderItem} onPress={() => navigateModalToFolder(item.id, item.name)}>
-                    <Ionicons name="folder-outline" size={24} color="#007AFF" />
+                    <View style={styles.folderItemIconContainer}>
+                      <Ionicons name="folder" size={24} color={customTheme.colors.primary} />
+                    </View>
                     <Text style={styles.folderName}>{String(item.name)}</Text>
                   </TouchableOpacity>
                 )}
@@ -237,23 +347,20 @@ export default function FolderSelectorModal({
           <View style={styles.actionsContainer}>
             {!showCreateFolderInput && (
               <>
-                <TouchableOpacity 
-                  style={styles.actionButton} 
+                <GradientButton 
+                  title={`Select This Folder (${getCurrentModalFolderName()})`}
                   onPress={handleSelectThisFolder}
                   disabled={isLoading}
-                >
-                  <Text style={styles.actionButtonText}>
-                    Select This Folder ({getCurrentModalFolderName()})
-                  </Text>
-                </TouchableOpacity>
+                  icon="checkmark-circle"
+                />
 
-                <TouchableOpacity 
-                  style={[styles.actionButton, {backgroundColor: '#34A853', marginTop: 10}]} 
+                <SecondaryButton 
+                  title="Create New Folder Here"
                   onPress={() => setShowCreateFolderInput(true)}
                   disabled={isLoading}
-                >
-                  <Text style={styles.actionButtonText}>Create New Folder Here</Text>
-                </TouchableOpacity>
+                  icon="add-circle"
+                  style={{marginTop: 12}}
+                />
               </>
             )}
 
@@ -264,22 +371,29 @@ export default function FolderSelectorModal({
                   placeholder="New folder name"
                   value={newFolderName}
                   onChangeText={setNewFolderName}
+                  placeholderTextColor={customTheme.colors.placeholder}
                   autoFocus={true}
                 />
                 <View style={styles.createFolderButtonRow}>
-                   <TouchableOpacity style={styles.cancelCreateButton} onPress={() => {setShowCreateFolderInput(false); setNewFolderName('');}} disabled={isCreatingFolder}>
-                     <Text style={styles.buttonText}>Cancel</Text>
-                   </TouchableOpacity>
-                   <TouchableOpacity style={styles.createButton} onPress={handleModalCreateFolder} disabled={isCreatingFolder || !newFolderName.trim()}>
-                    {isCreatingFolder ? <ActivityIndicator color="#fff" size="small"/> : <Text style={styles.buttonText}>Create</Text>}
-                   </TouchableOpacity>
+                   <SecondaryButton 
+                     title="Cancel"
+                     onPress={() => {setShowCreateFolderInput(false); setNewFolderName('');}} 
+                     disabled={isCreatingFolder}
+                     style={{flex: 1, marginRight: 8}}
+                   />
+                   <GradientButton 
+                     title="Create"
+                     onPress={handleModalCreateFolder} 
+                     disabled={isCreatingFolder || !newFolderName.trim()}
+                     style={{flex: 1, marginLeft: 8}}
+                   />
                 </View>
               </View>
             )}
           </View>
           {(contextIsLoading || isCreatingFolder) && !isModalFetchingFolders ? (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="#007AFF" />
+              <ActivityIndicator size="large" color={customTheme.colors.primary} />
             </View>
           ) : null}
         </View>

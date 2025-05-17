@@ -5,17 +5,20 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Platform,
   StatusBar,
   ScrollView,
   ActivityIndicator,
   Alert
 } from "react-native"
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Audio } from "expo-av"
 import { Ionicons } from "@expo/vector-icons"
 import { getNote } from "../app/api"
 import { AuthContext } from "../context/AuthContext"
+import { customTheme } from '../theme'
+import { Header, ElevatedCard } from '../components/CommonComponents'
+import { AudioPlayer } from '../components/AudioPlayer'
 
 export default function SingleNoteScreen({ route, navigation }) {
   const { noteId } = route.params
@@ -110,9 +113,13 @@ export default function SingleNoteScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Header 
+          title="Note Details" 
+          onBack={() => navigation.goBack()}
+        />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366f1" />
+          <ActivityIndicator size="large" color={customTheme.colors.primary} />
           <Text style={styles.loadingText}>Loading note details...</Text>
         </View>
       </SafeAreaView>
@@ -121,15 +128,13 @@ export default function SingleNoteScreen({ route, navigation }) {
 
   if (error || !note) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Note Details</Text>
-        </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Header 
+          title="Note Details" 
+          onBack={() => navigation.goBack()}
+        />
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
+          <Ionicons name="alert-circle-outline" size={64} color={customTheme.colors.error} />
           <Text style={styles.errorText}>{error || "Note not found"}</Text>
           <TouchableOpacity
             style={styles.refreshButton}
@@ -143,31 +148,32 @@ export default function SingleNoteScreen({ route, navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Note Details</Text>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor={customTheme.colors.background} />
+      <Header 
+        title="Note Details" 
+        onBack={() => navigation.goBack()}
+      />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
-        <View style={styles.noteCard}>
+        <ElevatedCard style={styles.noteCard}>
           <View style={styles.noteHeader}>
             <Text style={styles.noteTitle}>{note.title}</Text>
             <Text style={styles.noteDate}>{formatDate(note.timestamp)}</Text>
           </View>
 
-          <View style={styles.audioPlayerContainer}>
-            <TouchableOpacity
-              style={styles.playButton}
-              onPress={() => playSound(note.uri)}
-            >
-              <Ionicons name={isPlaying ? "pause" : "play"} size={24} color="#6366f1" />
-            </TouchableOpacity>
-            <Text style={styles.playText}>{isPlaying ? "Pause Audio" : "Play Audio"}</Text>
-          </View>
+          <AudioPlayer 
+            uri={note.uri}
+            sound={sound}
+            setSound={setSound}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            onPlaybackStatusUpdate={(status) => {
+              if (status.didJustFinish) {
+                setIsPlaying(false);
+              }
+            }}
+          />
 
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Transcript</Text>
@@ -190,7 +196,7 @@ export default function SingleNoteScreen({ route, navigation }) {
               )}
             </View>
           </View>
-        </View>
+        </ElevatedCard>
       </ScrollView>
     </SafeAreaView>
   )
@@ -199,23 +205,7 @@ export default function SingleNoteScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9fafb",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  backButton: {
-    marginRight: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
+    backgroundColor: customTheme.colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -225,7 +215,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#6b7280",
+    color: customTheme.colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
@@ -235,91 +225,84 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: "#ef4444",
+    color: customTheme.colors.error,
     textAlign: "center",
     marginTop: 16,
     marginBottom: 16,
   },
   refreshButton: {
-    backgroundColor: "#6366f1",
+    backgroundColor: customTheme.colors.primary,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   refreshButtonText: {
     color: "white",
-    fontWeight: "500",
+    fontWeight: "600",
   },
   scrollView: {
     flex: 1,
   },
   contentContainer: {
     padding: 16,
+    paddingBottom: 24,
   },
   noteCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    marginBottom: 16,
   },
   noteHeader: {
     marginBottom: 16,
   },
   noteTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#111827",
+    color: customTheme.colors.text,
+    marginBottom: 4,
   },
   noteDate: {
     fontSize: 14,
-    color: "#6b7280",
-    marginTop: 4,
+    color: customTheme.colors.textSecondary,
   },
   audioPlayerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: customTheme.colors.surfaceVariant,
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 16,
   },
-  playButton: {
+  playButtonContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: customTheme.colors.primary,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
+    ...customTheme.elevation.small,
   },
   playText: {
     fontSize: 16,
-    color: "#4b5563",
+    color: customTheme.colors.textSecondary,
+    fontWeight: "500",
   },
   sectionContainer: {
-    marginTop: 16,
+    marginTop: 20,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#4b5563",
+    color: customTheme.colors.text,
     marginBottom: 8,
   },
   contentBox: {
-    backgroundColor: "#f3f4f6",
-    borderRadius: 8,
+    backgroundColor: customTheme.colors.surfaceVariant,
+    borderRadius: 12,
     padding: 16,
   },
   contentText: {
     fontSize: 16,
     lineHeight: 24,
-    color: "#1f2937",
+    color: customTheme.colors.text,
   },
 })
