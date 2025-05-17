@@ -60,7 +60,7 @@ type GeminiResponse struct {
 // AskGemini sends a text prompt to Gemini and returns the response
 func (g *GeminiService) AskGemini(prompt string) (string, error) {
 	// Create a new HTTP request
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent"
+	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent"
 
 	// Use the Gemini JSON API format for text-only request
 	jsonRequest := GeminiRequest{

@@ -227,6 +227,29 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 	return &user, nil
 }
 
+// Authenticate verifies a user's credentials, returning the user if they're valid
+func (m UserModel) Authenticate(ctx context.Context, email, password string) (*User, error) {
+	// Retrieve the user with the provided email
+	user, err := m.RetrieveByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the provided password matches the stored hash
+	match, err := user.Password.Matches(password)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the password doesn't match, return credentials error
+	if !match {
+		return nil, ErrWrongCredentials
+	}
+
+	// Return the authenticated user
+	return user, nil
+}
+
 func (m UserModel) Retrieve(id int64) (*User, error) {
 	stmt := `SELECT id, name, email, version, role, activated, created_at, password_hash
 	FROM users WHERE id = $1`
