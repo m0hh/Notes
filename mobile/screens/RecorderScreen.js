@@ -522,23 +522,28 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end", // Slide up from bottom
+    justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   modalContainer: {
     backgroundColor: "white",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderRadius: 24,
     width: "100%",
     maxHeight: "90%",
     ...customTheme.elevation.large,
+    flexDirection: 'column',
+    flexGrow: 1,
+    overflow: 'hidden',
   },
   modalHeader: {
     borderBottomWidth: 0,
     paddingVertical: 16,
+    backgroundColor: "white",
   },
   modalScrollView: {
     flex: 1,
+    width: '100%',
   },
   modalContent: {
     padding: 20,

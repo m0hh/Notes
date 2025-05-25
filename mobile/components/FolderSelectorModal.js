@@ -10,17 +10,20 @@ const styles = StyleSheet.create({
   modalOverlay: { 
     flex: 1, 
     backgroundColor: 'rgba(0,0,0,0.5)', 
-    justifyContent: 'flex-end', 
+    justifyContent: 'center', // Changed from 'flex-end'
     alignItems: 'center',
+    padding: 20, // Added padding around the modal container
   },
   modalContainer: { 
-    width: '100%', 
-    maxHeight: '90%', 
+    width: '100%', // Will take full width of the padded overlay
+    maxHeight: '95%', // Will take up to 95% height of the padded overlay
     backgroundColor: customTheme.colors.surface, 
-    borderTopLeftRadius: 24, 
-    borderTopRightRadius: 24, 
-    padding: 20, 
+    borderRadius: 24, // Applied to all corners
+    padding: 20, // Existing internal padding
     ...customTheme.elevation.large,
+    overflow: 'hidden', // Ensures content respects rounded borders
+    display: 'flex', // Added
+    flexDirection: 'column', // Added
   },
   header: { 
     flexDirection: 'row', 
@@ -63,7 +66,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   folderListContainer: {
-    flex: 1,
+    flexGrow: 1, // Changed
+    flexShrink: 1, // Added
     minHeight: 200,
     marginVertical: 12,
   },
@@ -102,6 +106,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, 
     borderTopColor: customTheme.colors.border, 
     paddingTop: 16,
+    flexShrink: 0, // Added: Prevents this container from shrinking
   },
   createFolderContainer: { 
     marginTop: 10, 
@@ -131,7 +136,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.7)', 
     justifyContent: 'center', 
     alignItems: 'center', 
-    borderRadius: 10, 
+    borderRadius: 24, // Match modalContainer's borderRadius
     zIndex: 10,
   },
   listContentContainer: { 
@@ -296,6 +301,10 @@ export default function FolderSelectorModal({
   const isLoading = contextIsLoading || isCreatingFolder || isModalFetchingFolders;
   const isLoadingForList = isModalFetchingFolders;
 
+  // Condition for the main blocking overlay. Show it when creating a folder,
+  // but not if the list is already showing its own loading indicator for fetching.
+  const showBlockingOverlay = isCreatingFolder && !isModalFetchingFolders;
+
   return (
     <Modal
       visible={visible}
@@ -343,7 +352,6 @@ export default function FolderSelectorModal({
               />
             )}
           </View>
-
           <View style={styles.actionsContainer}>
             {!showCreateFolderInput && (
               <>
@@ -391,7 +399,7 @@ export default function FolderSelectorModal({
               </View>
             )}
           </View>
-          {(contextIsLoading || isCreatingFolder) && !isModalFetchingFolders ? (
+          {showBlockingOverlay ? (
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color={customTheme.colors.primary} />
             </View>
