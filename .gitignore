@@ -3,8 +3,8 @@
 config.json
 Makefile
 config*
-api*
 /uploads
+api.service
 .
 # React Native
 /mobile/node_modules/
