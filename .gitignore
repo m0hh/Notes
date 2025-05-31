@@ -38,3 +38,5 @@ api.service
 # If you choose to ignore lock files (generally not recommended for consistency)
 # /mobile/package-lock.json
 # /mobile/yarn.lock
+
+notesgpt.log

@@ -135,7 +135,17 @@ func main() {
 		os.Exit(0)
 	}
 
-	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
+	logFilePath := "/var/log/app/notesgpt.log" // Or get from config
+	// Ensure the directory exists if it's not created automatically
+	// For example, os.MkdirAll(filepath.Dir(logFilePath), 0755)
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		// Fallback or panic
+		logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
+		logger.PrintFatal(err, nil)
+	}
+	defer logFile.Close()                             // Close when main exits, or handle elsewhere
+	logger := jsonlog.New(logFile, jsonlog.LevelInfo) // Or your desired level
 
 	// If a config file path was provided, try to load it
 	if appConfigPath != "" {

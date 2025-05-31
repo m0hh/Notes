@@ -1,0 +1,72 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: backend-app-logs
+    docker_sd_configs: # Use Docker service discovery
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label # Filter by the label added to the app service
+            values: ["logging=promtail"]
+    relabel_configs: # Relabel to get container name and other useful labels
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/?(.*)'
+        target_label: 'container_name'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'logstream'
+      - source_labels: ['__meta_docker_container_label_logging'] # Optional: use the label itself
+        target_label: 'job' # Override job name to be 'backend-app' or similar based on label
+        replacement: 'backend-app' # Static replacement, or use regex from label
+    pipeline_stages:
+      - docker: {} # Use this if logs are in Docker's default json-file format
+      # If your application logs are plain text and not JSON, you might need to parse them.
+      # Example: if logs are "level=info msg=...", you might use a regex stage.
+      # - regex:
+      #   expression: 'level=(?P<level>\\w+) msg="?(?P<message>.+?)"?$'
+      # - labels:
+      #    level:
+      #    message:
+  - job_name: backend-app-filelogs
+    static_configs:
+      - targets:
+          - localhost # Promtail reads files from its own filesystem context
+        labels:
+          job: backend-app # Use the same job label as Grafana dashboard expects
+          __path__: /mnt/logs/app/notesgpt.log # Path inside the Promtail container
+    # If your notesgpt.log contains JSON objects (one per line),
+    # Loki will ingest the raw JSON string. Grafana's `| json` operator
+    # in your dashboard queries will then parse this JSON.
+    # If the logs are plain text and you want to parse them (e.g., to extract a level),
+    # you would add pipeline_stages here, for example:
+    # pipeline_stages:
+    #   - regex:
+    #       expression: '.*level=(?P<level>\w+).*msg="(?P<msg>.*)".*'
+    #   - labels:
+    #       level:
+    #       msg:
+
+  # Example for scraping Docker container logs directly via Docker API (requires Promtail to have Docker socket access)
+  # This is an alternative to reading log files from a volume.
+  # - job_name: containerlogs
+  #   docker_sd_configs:
+  #     - host: unix:///var/run/docker.sock
+  #       refresh_interval: 5s
+  #       filters: # Optional: filter which containers to scrape logs from
+  #         - name: label
+  #           values: ["logging=promtail"]
+  #   relabel_configs:
+  #     - source_labels: ['__meta_docker_container_name']
+  #       regex: '/?(.*)'
+  #       target_label: 'container'
+  #     - source_labels: ['__meta_docker_container_log_stream']
+  #       target_label: 'logstream'
+  #     - source_labels: ['__meta_docker_container_label_service_name'] # Example: if you set a label 'service_name' on your app container
+  #       target_label: 'service'

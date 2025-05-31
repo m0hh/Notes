@@ -1,0 +1,11 @@
+Navigate to your mobile directory in the terminal.
+Delete node_modules and any lock files: rm -rf node_modules package-lock.json yarn.lock
+Reinstall dependencies: npm install (or yarn install).
+Navigate to the android directory: cd android
+Clean Android build artifacts: rm -rf .gradle build app/build
+Go back to the mobile directory: cd ..
+Run expo prebuild --platform android --clean to regenerate the android folder with the correct configurations based on the updated dependencies. This command might prompt you if it's okay to delete and recreate the android directory.
+Try the Gradle clean command again:
+
+Navigate to the android directory: cd android
+Run: ./gradlew clean

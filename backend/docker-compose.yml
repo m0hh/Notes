@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg15
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - DB_DSN=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      - WHISPER_API_KEY=${WHISPER_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GCS_BUCKET=${GCS_BUCKET}
+      - GCS_ENABLED=${GCS_ENABLED}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_SENDER=${SMTP_SENDER}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./applogs:/var/log/app # Can remain if app writes files here for other reasons
+    depends_on:
+      - db # Add dependency on the new db service
+    labels: # Add this for Promtail discovery
+      - "logging=promtail"
+    logging: # Default json-file driver is fine
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+  # Prometheus for metrics scraping
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - app # Optional: ensure app is at least started before prometheus tries to scrape
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml # Ensure this line is correct
+      - /var/run/docker.sock:/var/run/docker.sock # Mount Docker socket
+      - ./applogs:/mnt/logs/app # Mount app's log directory for Promtail to access
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+      - app # Ensure app is running to create log files
+      - db # promtail should also depend on db if it's expected to collect its logs, though not configured for it now
+    # network_mode: host # Sometimes needed for Promtail to access Docker API or host logs, but try bridged first.
+
+  # Loki for log aggregation
+  loki:
+    image: grafana/loki:2.9.0
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    # volumes:
+    #   - ./loki-config.yaml:/etc/loki/local-config.yaml # Default config is usually fine for starting
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:10.1.1
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    volumes:
+      - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana-provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+      - db # Grafana might have dashboards that query postgres
+
+volumes:
+  postgres_data: # Persists PostgreSQL data
+  grafana_data:  # Persists Grafana data and configurations
+  applogs: # Define the applogs volume

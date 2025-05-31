@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s # By default, scrape targets every 15 seconds.
+
+scrape_configs:
+  - job_name: 'prometheus'
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'
+    static_configs:
+      - targets: ['localhost:9090'] # Prometheus itself
+
+  - job_name: 'notesgpt-app'
+    # Scrape the /debug/vars endpoint from your Go application
+    metrics_path: /debug/vars
+    static_configs:
+      # Assuming your Go app (service name 'app' in docker-compose) is running on port 4000
+      # Docker Compose networking allows services to reach each other by service name.
+      - targets: ['app:4000']

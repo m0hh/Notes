@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"expvar"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,8 +12,28 @@ import (
 	"github.com/felixge/httpsnoop"
 	"github.com/m0hh/Notes/internal/data"
 	"github.com/m0hh/Notes/internal/validator"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
+)
+
+var (
+	httpRequestsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Total number of HTTP requests.",
+		},
+		[]string{"method", "path", "status"},
+	)
+	httpRequestDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "http_request_duration_seconds",
+			Help:    "Duration of HTTP requests.",
+			Buckets: prometheus.DefBuckets, // Default buckets
+		},
+		[]string{"method", "path", "status"},
+	)
 )
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
@@ -263,20 +282,23 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 }
 
 func (app *application) metrics(next http.Handler) http.Handler {
-	totalRequestsReceived := expvar.NewInt("total_requests_received")
-	totalResponsesSent := expvar.NewInt("total_responses_sent")
-	totalProcessingTimeMicroseconds := expvar.NewInt("total_processing_time_μs")
-	totalResponsesSentByStatus := expvar.NewMap("total_responses_sent_by_status")
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		totalRequestsReceived.Add(1)
-
 		metrics := httpsnoop.CaptureMetrics(next, w, r)
 
-		totalResponsesSent.Add(1)
+		path := r.URL.Path // Consider normalizing this for high cardinality paths
+		status := strconv.Itoa(metrics.Code)
+		method := r.Method
 
-		totalProcessingTimeMicroseconds.Add(metrics.Duration.Microseconds())
+		httpRequestsTotal.WithLabelValues(method, path, status).Inc()
+		httpRequestDuration.WithLabelValues(method, path, status).Observe(metrics.Duration.Seconds())
 
-		totalResponsesSentByStatus.Add(strconv.Itoa(metrics.Code), 1)
+		app.logger.PrintInfo("request completed", map[string]string{
+			"method":   method,
+			"url":      r.URL.String(),
+			"status":   status,
+			"duration": metrics.Duration.String(),
+			"remoteIP": realip.FromRequest(r),
+			"size":     fmt.Sprintf("%d bytes", metrics.Written),
+		})
 	})
 }
